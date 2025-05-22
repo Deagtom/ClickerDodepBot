@@ -11,17 +11,20 @@ namespace ClickerDodepBot
             _connectionString = connectionString;
         }
 
-        public async Task CreateUserIfNotExists(long userId)
+        public async Task CreateUserIfNotExists(long userId, string? username)
         {
             await using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync();
 
             var cmd = new NpgsqlCommand(@"
-            INSERT INTO users (id) 
-            VALUES (@id) 
-            ON CONFLICT (id) DO NOTHING", conn);
+                                        INSERT INTO users (id, username) 
+                                        VALUES (@id, @username) 
+                                        ON CONFLICT (id) 
+                                        DO UPDATE SET username = EXCLUDED.username", conn);
 
             cmd.Parameters.AddWithValue("id", userId);
+            cmd.Parameters.AddWithValue("username", (object?)username ?? DBNull.Value);
+
             await cmd.ExecuteNonQueryAsync();
         }
 
@@ -31,9 +34,9 @@ namespace ClickerDodepBot
             await conn.OpenAsync();
 
             var cmd = new NpgsqlCommand(@"
-            UPDATE users SET balance = balance + 1 
-            WHERE id = @id 
-            RETURNING balance", conn);
+                                        UPDATE users SET balance = balance + 1 
+                                        WHERE id = @id 
+                                        RETURNING balance", conn);
 
             cmd.Parameters.AddWithValue("id", userId);
             var result = await cmd.ExecuteScalarAsync();
@@ -45,7 +48,11 @@ namespace ClickerDodepBot
             await using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            var cmd = new NpgsqlCommand("SELECT balance FROM users WHERE id = @id", conn);
+            var cmd = new NpgsqlCommand(@"
+                                        SELECT balance 
+                                        FROM users 
+                                        WHERE id = @id", conn);
+
             cmd.Parameters.AddWithValue("id", userId);
 
             var result = await cmd.ExecuteScalarAsync();
@@ -56,7 +63,11 @@ namespace ClickerDodepBot
         {
             using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync();
-            var cmd = new NpgsqlCommand("UPDATE users SET roulette_color = @color, awaiting_roulette_amount = true WHERE id = @id ", conn);
+            var cmd = new NpgsqlCommand(@"
+                                        UPDATE users 
+                                        SET roulette_color = @color, awaiting_roulette_amount = true 
+                                        WHERE id = @id ", conn);
+
             cmd.Parameters.AddWithValue("id", userId);
             cmd.Parameters.AddWithValue("color", color);
             await cmd.ExecuteNonQueryAsync();
@@ -66,7 +77,11 @@ namespace ClickerDodepBot
         {
             using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync();
-            var cmd = new NpgsqlCommand("SELECT roulette_color FROM users WHERE id = @id AND awaiting_roulette_amount = true", conn);
+            var cmd = new NpgsqlCommand(@"
+                                        SELECT roulette_color 
+                                        FROM users WHERE id = @id 
+                                        AND awaiting_roulette_amount = true", conn);
+
             cmd.Parameters.AddWithValue("id", userId);
             var result = await cmd.ExecuteScalarAsync();
             return result as string;
@@ -76,7 +91,11 @@ namespace ClickerDodepBot
         {
             using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync();
-            var cmd = new NpgsqlCommand("UPDATE users SET roulette_color = NULL, awaiting_roulette_amount = false WHERE id = @id", conn);
+            var cmd = new NpgsqlCommand(@"
+                                        UPDATE users 
+                                        SET roulette_color = NULL, awaiting_roulette_amount = false 
+                                        WHERE id = @id", conn);
+
             cmd.Parameters.AddWithValue("id", userId);
             await cmd.ExecuteNonQueryAsync();
         }
@@ -86,7 +105,11 @@ namespace ClickerDodepBot
             using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            var cmd = new NpgsqlCommand("UPDATE users SET balance = balance - @amount WHERE id = @id AND balance >= @amount", conn);
+            var cmd = new NpgsqlCommand(@"
+                                        UPDATE users 
+                                        SET balance = balance - @amount 
+                                        WHERE id = @id 
+                                        AND balance >= @amount", conn);
 
             cmd.Parameters.AddWithValue("id", userId);
             cmd.Parameters.AddWithValue("amount", amount);
@@ -100,7 +123,10 @@ namespace ClickerDodepBot
             using var conn = new NpgsqlConnection(_connectionString);
             await conn.OpenAsync();
 
-            var cmd = new NpgsqlCommand("UPDATE users SET balance = balance + @amount WHERE id = @id", conn);
+            var cmd = new NpgsqlCommand(@"
+                                        UPDATE users 
+                                        SET balance = balance + @amount 
+                                        WHERE id = @id", conn);
 
             cmd.Parameters.AddWithValue("id", userId);
             cmd.Parameters.AddWithValue("amount", amount);

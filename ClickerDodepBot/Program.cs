@@ -4,10 +4,9 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using ClickerDodepBot;
- 
+
 using var cts = new CancellationTokenSource();
 var bot = new TelegramBotClient("7884397200:AAGk5KdZTdpdynX4EiR-tLuELgFgYbWVvzs", cancellationToken: cts.Token);
-var me = await bot.GetMe();
 
 var connectionString = "Host=localhost;Username=postgres;Password=Deagtom;Database=postgres";
 var repo = new UserRepository(connectionString);
@@ -25,7 +24,7 @@ string ColorName(string color) => color switch
 };
 
 
-Console.WriteLine($"@{me.Username} is running... Press Enter to terminate");
+Console.WriteLine($"ClickerDodepBot is running... Press Enter to terminate");
 Console.ReadLine();
 cts.Cancel();
 
@@ -39,7 +38,7 @@ async Task OnMessage(Message msg, UpdateType type)
     switch (msg.Text)
     {
         case "/start":
-            await repo.CreateUserIfNotExists(msg.From!.Id);
+            await repo.CreateUserIfNotExists(msg.From!.Id, msg.From.Username);
 
             await bot.SendMessage(
                 msg.Chat, "Выберите игру 👇",
