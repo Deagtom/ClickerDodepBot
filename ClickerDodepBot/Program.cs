@@ -5,32 +5,42 @@ using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using ClickerDodepBot;
 
-using var cts = new CancellationTokenSource();
-var bot = new TelegramBotClient("7884397200:AAGk5KdZTdpdynX4EiR-tLuELgFgYbWVvzs", cancellationToken: cts.Token);
-
 var connectionString = "Host=localhost;Username=postgres;Password=Deagtom;Database=postgres";
 var repo = new UserRepository(connectionString);
 
-bot.OnError += OnError;
-bot.OnMessage += OnMessage;
-bot.OnUpdate += OnUpdate;
+using var cts = new CancellationTokenSource();
+var bot = new TelegramBotClient("7884397200:AAGk5KdZTdpdynX4EiR-tLuELgFgYbWVvzs", cancellationToken: cts.Token);
 
-string ColorName(string color) => color switch
+var receiverOptions = new ReceiverOptions
 {
-    "red" => "🔴 Красное",
-    "black" => "⚫️ Чёрное",
-    "green" => "🟢 Зелёное",
-    _ => "Неизвестно"
+    AllowedUpdates = Array.Empty<UpdateType>()
 };
 
+bot.StartReceiving(
+    updateHandler: HandleUpdateAsync,
+    errorHandler: HandlePollingErrorAsync,
+    receiverOptions: receiverOptions,
+    cancellationToken: cts.Token
+);
 
-Console.WriteLine($"ClickerDodepBot is running... Press Enter to terminate");
+Console.WriteLine("ClickerDodepBot is running... Press Enter to exit");
 Console.ReadLine();
+
 cts.Cancel();
 
-async Task OnError(Exception exception, HandleErrorSource source)
+async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken token)
 {
-    Console.WriteLine(exception);
+    if (update.Message != null)
+        await OnMessage(update.Message, update.Type);
+
+    if (update.CallbackQuery != null)
+        await OnUpdate(update);
+}
+
+Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, CancellationToken token)
+{
+    Console.WriteLine($"Ошибка при получении обновлений: {exception.Message}");
+    return Task.CompletedTask;
 }
 
 async Task OnMessage(Message msg, UpdateType type)
@@ -64,58 +74,15 @@ async Task OnMessage(Message msg, UpdateType type)
             break;
 
         case "/roulette":
+            string webAppUrl = $"https://deagtom.github.io/roulette-html?userId={msg.From!.Id}";
             await bot.SendMessage(
-                msg.Chat, "Выберите действие 👇",
+                msg.Chat,
+                "🎰 Нажмите кнопку ниже, чтобы сыграть в рулетку:",
                 replyMarkup: new InlineKeyboardMarkup(
-                [
-                    [
-                        InlineKeyboardButton.WithCallbackData("Красное 🔴", "red"),
-                        InlineKeyboardButton.WithCallbackData("Чёрное ⚫️", "black"),
-                        InlineKeyboardButton.WithCallbackData("Зелёное 🟢", "green")
-                    ]
-                ])
+                    InlineKeyboardButton.WithWebApp("🎮 Играть в рулетку", new WebAppInfo(webAppUrl))
+                )
             );
             break;
-    }
-
-    var userId = msg.From!.Id;
-    var selectedColor = await repo.GetAwaitingRouletteColor(userId);
-
-    if (selectedColor != null)
-    {
-        if (!int.TryParse(msg.Text, out var amount) || amount <= 0)
-        {
-            await bot.SendMessage(msg.Chat.Id, "❗ Введите корректную сумму");
-            return;
-        }
-
-        var success = await repo.TryWithdraw(userId, amount);
-        if (!success)
-        {
-            await bot.SendMessage(msg.Chat.Id, "❌ Недостаточно монет!");
-            await repo.ClearRouletteState(userId);
-            return;
-        }
-
-        var rnd = new Random().Next(0, 37);
-        var actualColor = rnd == 0 ? "green" : rnd % 2 == 0 ? "black" : "red";
-        bool win = actualColor == selectedColor;
-
-        int multiplier = selectedColor == "green" ? 14 : 2;
-        int prize = win ? amount * multiplier : 0;
-
-        if (win)
-        {
-            await repo.AddBalance(userId, prize);
-            await bot.SendMessage(msg.Chat.Id, $"🎉 Выпало: {ColorName(actualColor)} ({rnd})\nВы выиграли {prize} монет!");
-        }
-        else
-        {
-            await bot.SendMessage(msg.Chat.Id, $"😢 Выпало: {ColorName(actualColor)} ({rnd})\nВы проиграли {amount} монет.");
-        }
-
-        await repo.ClearRouletteState(userId);
-        return;
     }
 }
 
@@ -137,14 +104,6 @@ async Task OnUpdate(Update update)
                 var balance = await repo.GetBalance(userId);
                 await bot.AnswerCallbackQuery(query.Id, "📊 Баланс");
                 await bot.SendMessage(chatId, $"Ваш баланс: {balance} монет(ы)");
-                break;
-
-            case "red":
-            case "black":
-            case "green":
-                await repo.SetRouletteColor(userId, query.Data);
-                await bot.AnswerCallbackQuery(query.Id);
-                await bot.SendMessage(chatId, $"Введите сумму ставки на {ColorName(query.Data)}:");
                 break;
         }
     }

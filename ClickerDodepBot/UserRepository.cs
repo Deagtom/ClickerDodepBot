@@ -59,47 +59,6 @@ namespace ClickerDodepBot
             return Convert.ToInt32(result);
         }
 
-        public async Task SetRouletteColor(long userId, string color)
-        {
-            using var conn = new NpgsqlConnection(_connectionString);
-            await conn.OpenAsync();
-            var cmd = new NpgsqlCommand(@"
-                                        UPDATE users 
-                                        SET roulette_color = @color, awaiting_roulette_amount = true 
-                                        WHERE id = @id ", conn);
-
-            cmd.Parameters.AddWithValue("id", userId);
-            cmd.Parameters.AddWithValue("color", color);
-            await cmd.ExecuteNonQueryAsync();
-        }
-
-        public async Task<string?> GetAwaitingRouletteColor(long userId)
-        {
-            using var conn = new NpgsqlConnection(_connectionString);
-            await conn.OpenAsync();
-            var cmd = new NpgsqlCommand(@"
-                                        SELECT roulette_color 
-                                        FROM users WHERE id = @id 
-                                        AND awaiting_roulette_amount = true", conn);
-
-            cmd.Parameters.AddWithValue("id", userId);
-            var result = await cmd.ExecuteScalarAsync();
-            return result as string;
-        }
-
-        public async Task ClearRouletteState(long userId)
-        {
-            using var conn = new NpgsqlConnection(_connectionString);
-            await conn.OpenAsync();
-            var cmd = new NpgsqlCommand(@"
-                                        UPDATE users 
-                                        SET roulette_color = NULL, awaiting_roulette_amount = false 
-                                        WHERE id = @id", conn);
-
-            cmd.Parameters.AddWithValue("id", userId);
-            await cmd.ExecuteNonQueryAsync();
-        }
-
         public async Task<bool> TryWithdraw(long userId, int amount)
         {
             using var conn = new NpgsqlConnection(_connectionString);
