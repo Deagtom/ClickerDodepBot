@@ -3,30 +3,52 @@ using Telegram.Bot.Polling;
 using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
-using ClickerDodepBot;
+using Serilog;
+
+
+Log.Logger = new LoggerConfiguration()
+    .WriteTo.Console()
+    .MinimumLevel.Information()
+    .CreateLogger();
+
+TelegramBotClient bot;
 
 var connectionString = "Host=localhost;Username=postgres;Password=Deagtom;Database=postgres";
 var repo = new UserRepository(connectionString);
 
-using var cts = new CancellationTokenSource();
-var bot = new TelegramBotClient("7884397200:AAGk5KdZTdpdynX4EiR-tLuELgFgYbWVvzs", cancellationToken: cts.Token);
-
-var receiverOptions = new ReceiverOptions
+try
 {
-    AllowedUpdates = Array.Empty<UpdateType>()
-};
+    Log.Information("ClickerDodepBot запускается...");
 
-bot.StartReceiving(
-    updateHandler: HandleUpdateAsync,
-    errorHandler: HandlePollingErrorAsync,
-    receiverOptions: receiverOptions,
-    cancellationToken: cts.Token
-);
+    using var cts = new CancellationTokenSource();
+    bot = new TelegramBotClient("7884397200:AAGk5KdZTdpdynX4EiR-tLuELgFgYbWVvzs", cancellationToken: cts.Token);
 
-Console.WriteLine("ClickerDodepBot is running... Press Enter to exit");
-Console.ReadLine();
+    var receiverOptions = new ReceiverOptions
+    {
+        AllowedUpdates = Array.Empty<UpdateType>()
+    };
 
-cts.Cancel();
+    bot.StartReceiving(
+        updateHandler: HandleUpdateAsync,
+        errorHandler: HandlePollingErrorAsync,
+        receiverOptions: receiverOptions,
+        cancellationToken: cts.Token
+    );
+
+    Log.Information("ClickerDodepBot запущен");
+    Console.WriteLine("Нажмите Enter чтобы закрыть");
+    Console.ReadLine();
+
+    cts.Cancel();
+}
+catch (Exception ex)
+{
+    Log.Error(ex, "Произошла ошибка в работе бота");
+}
+finally
+{
+    Log.CloseAndFlush();
+}
 
 async Task HandleUpdateAsync(ITelegramBotClient botClient, Update update, CancellationToken token)
 {
@@ -45,9 +67,12 @@ Task HandlePollingErrorAsync(ITelegramBotClient botClient, Exception exception, 
 
 async Task OnMessage(Message msg, UpdateType type)
 {
+    Log.Information("Получено сообщение от пользователя {UserId}: {Text}", msg.From!.Id, msg.Text);
+
     switch (msg.Text)
     {
         case "/start":
+            Log.Information("Пользователь {UserId} начал работу с ботом", msg.From.Id);
             await repo.CreateUserIfNotExists(msg.From!.Id, msg.From.Username);
 
             await bot.SendMessage(
@@ -61,6 +86,8 @@ async Task OnMessage(Message msg, UpdateType type)
             break;
 
         case "/clicker":
+            Log.Information("Пользователь {UserId} выбрал кликер", msg.From.Id);
+
             await bot.SendMessage(
                 msg.Chat, "Выберите действие 👇",
                 replyMarkup: new InlineKeyboardMarkup(
@@ -74,6 +101,8 @@ async Task OnMessage(Message msg, UpdateType type)
             break;
 
         case "/roulette":
+            Log.Information("Пользователь {UserId} выбрал рулетку", msg.From.Id);
+
             string webAppUrl = $"https://deagtom.github.io/roulette-html?userId={msg.From!.Id}";
             await bot.SendMessage(
                 msg.Chat,
@@ -82,6 +111,10 @@ async Task OnMessage(Message msg, UpdateType type)
                     InlineKeyboardButton.WithWebApp("🎮 Играть в рулетку", new WebAppInfo(webAppUrl))
                 )
             );
+            break;
+
+        default:
+            Log.Warning("Пользователь {UserId} отправил неизвестную команду: {Text}", msg.From.Id, msg.Text);
             break;
     }
 }
@@ -92,6 +125,8 @@ async Task OnUpdate(Update update)
     {
         var chatId = query.Message!.Chat.Id;
         var userId = query.From.Id;
+
+        Log.Information("Пользователь {UserId} вызвал callback: {CallbackData}", userId, query.Data);
 
         switch (query.Data)
         {

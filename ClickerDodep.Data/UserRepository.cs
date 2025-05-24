@@ -1,8 +1,8 @@
 ﻿using Npgsql;
 
-namespace ClickerDodepBot
+namespace ClickerDodep.Data
 {
-    internal class UserRepository
+    public class UserRepository
     {
         private readonly string _connectionString;
 
