@@ -4,19 +4,32 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Рулетка с выбором цвета</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet" />
     <style>
-        body {
+        :root {
+            --red: #e74c3c;
+            --black: #2c3e50;
+            --green: #2ecc71;
+            --bg: #1f1f1f;
+            --text: #eee;
+            --accent: #f1c40f;
+        }
+
+        * {
+            box-sizing: border-box;
             margin: 0;
-            background: #1e1e1e;
+            padding: 0
+        }
+
+        body {
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Roboto', sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start;
             min-height: 100vh;
-            color: white;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             padding: 20px;
-            box-sizing: border-box;
         }
 
         .balance {
@@ -24,59 +37,25 @@
             top: 20px;
             right: 20px;
             background: #333;
-            padding: 10px 18px;
-            border-radius: 12px;
+            padding: 8px 16px;
+            border-radius: 10px;
             font-weight: 700;
-            font-size: 18px;
-            color: #2ecc71;
-            box-shadow: 0 0 8px #2ecc71aa;
+            color: var(--green);
+            box-shadow: 0 0 6px var(--green);
             user-select: none;
-            z-index: 10;
-            min-width: 120px;
-            text-align: center;
         }
 
         .roulette-container {
             position: relative;
             width: 90%;
             max-width: 700px;
-            overflow: hidden;
-            border: 4px solid #444;
-            background: #111;
-            border-radius: 12px;
-            box-shadow: 0 0 20px #222 inset;
+            height: 100px;
             margin-top: 80px;
-        }
-
-        .roulette-strip {
-            display: flex;
-            transition: transform 8s cubic-bezier(0.25, 1, 0.5, 1);
-            will-change: transform;
-        }
-
-        .slot {
-            width: 80px;
-            height: 80px;
-            margin: 0;
-            flex-shrink: 0;
-            border-radius: 8px;
-            box-shadow: inset 0 0 8px #0008;
-            transition: transform 0.3s ease;
-        }
-
-        .red {
-            background: #e74c3c;
-            box-shadow: 0 0 10px #e74c3c;
-        }
-
-        .black {
-            background: #2c3e50;
-            box-shadow: 0 0 10px #2c3e50;
-        }
-
-        .green {
-            background: #2ecc71;
-            box-shadow: 0 0 10px #2ecc71;
+            overflow: hidden;
+            background: #111;
+            border: 4px solid #444;
+            border-radius: 12px;
+            box-shadow: inset 0 0 20px #000;
         }
 
         .indicator {
@@ -85,279 +64,306 @@
             bottom: 0;
             left: 50%;
             width: 6px;
-            background: yellow;
+            background: var(--accent);
             transform: translateX(-50%);
-            z-index: 5;
-            border-radius: 2px;
-            box-shadow: 0 0 10px yellow;
+            border-radius: 3px;
+            box-shadow: 0 0 8px var(--accent);
+            z-index: 2;
+        }
+
+        .roulette-strip {
+            display: flex;
+            align-items: center;
+            will-change: transform;
+        }
+
+        .slot {
+            width: 90px;
+            height: 90px;
+            margin-right: 5px;
+            border-radius: 8px;
+            flex-shrink: 0;
+            box-shadow: inset 0 0 6px #0008;
+        }
+
+            .slot.red {
+                background: var(--red);
+                box-shadow: 0 0 8px var(--red);
+            }
+
+            .slot.black {
+                background: var(--black);
+                box-shadow: 0 0 8px var(--black);
+            }
+
+            .slot.green {
+                background: var(--green);
+                box-shadow: 0 0 8px var(--green);
+            }
+
+        .controls {
+            margin-top: 30px;
+            display: flex;
+            flex-direction: column;
+            width: 90%;
+            max-width: 400px;
+            gap: 15px;
         }
 
         #colorButtons {
-            margin-top: 25px;
             display: flex;
-            justify-content: center;
-            gap: 20px;
-            user-select: none;
+            gap: 10px;
         }
 
             #colorButtons button {
-                width: 110px;
-                padding: 14px 0;
-                font-size: 18px;
+                flex: 1;
+                padding: 10px;
                 font-weight: 700;
+                font-size: 16px;
                 border: none;
-                border-radius: 14px;
+                border-radius: 8px;
                 cursor: pointer;
-                color: white;
-                transition: transform 0.2s ease, box-shadow 0.2s ease;
-                box-shadow: 0 0 6px #0008;
+                color: #fff;
+                transition: transform .15s, box-shadow .15s;
+                user-select: none;
             }
 
                 #colorButtons button.red {
-                    background: #e74c3c;
-                    box-shadow: 0 0 12px #e74c3c;
+                    background: var(--red)
                 }
 
                 #colorButtons button.black {
-                    background: #2c3e50;
-                    box-shadow: 0 0 12px #2c3e50;
+                    background: var(--black)
                 }
 
                 #colorButtons button.green {
-                    background: #2ecc71;
-                    box-shadow: 0 0 12px #2ecc71;
+                    background: var(--green)
                 }
 
                 #colorButtons button:hover {
-                    transform: scale(1.1);
+                    transform: scale(1.05)
                 }
 
                 #colorButtons button.selected {
-                    outline: 4px solid yellow;
-                    box-shadow: 0 0 15px yellow;
-                    transform: scale(1.15);
+                    outline: 3px solid var(--accent);
+                    box-shadow: 0 0 8px var(--accent);
+                    transform: scale(1.1);
                 }
 
         #betInput {
-            margin-top: 25px;
-            width: 150px;
-            font-size: 18px;
-            padding: 12px 16px;
-            border-radius: 14px;
-            border: none;
-            outline: none;
-            box-shadow: 0 0 8px #333 inset;
-            background: #222;
-            color: white;
+            width: 100%;
+            padding: 10px;
+            font-size: 16px;
             text-align: center;
-            font-weight: 600;
+            border: none;
+            border-radius: 8px;
+            background: #222;
+            color: #fff;
+            box-shadow: inset 0 0 6px #0008;
+            user-select: none;
         }
 
         #spinBtn {
-            margin-top: 20px;
-            padding: 14px 28px;
-            font-size: 20px;
+            width: 100%;
+            padding: 12px;
+            font-size: 18px;
             font-weight: 700;
             border: none;
-            border-radius: 14px;
+            border-radius: 8px;
             cursor: pointer;
-            background: linear-gradient(45deg, #f39c12, #d35400);
-            color: white;
-            box-shadow: 0 0 15px #e67e22;
-            transition: background 0.3s ease, transform 0.2s ease;
+            background: linear-gradient(45deg,#f39c12,#d35400);
+            color: #fff;
+            box-shadow: 0 0 12px #e67e22;
+            transition: transform .15s, background .3s;
             user-select: none;
         }
 
             #spinBtn:hover {
-                background: linear-gradient(45deg, #d35400, #f39c12);
-                transform: scale(1.05);
+                transform: scale(1.03);
             }
 
         #result {
-            margin-top: 30px;
-            font-size: 20px;
+            margin-top: 20px;
+            font-size: 18px;
             font-weight: 700;
-            min-height: 30px;
-            user-select: none;
+            min-height: 24px;
             text-align: center;
-            padding: 0 10px;
         }
     </style>
 </head>
 <body>
 
-    <div class="balance" id="balance">Баланс: 0 💰</div>
+    <div class="balance" id="balance">Баланс: ...</div>
 
     <div class="roulette-container">
         <div class="indicator"></div>
         <div class="roulette-strip" id="strip"></div>
     </div>
 
-    <div id="colorButtons">
-        <button class="red" onclick="selectColor('red')" aria-label="Красный">Красный</button>
-        <button class="black" onclick="selectColor('black')" aria-label="Чёрный">Чёрный</button>
-        <button class="green" onclick="selectColor('green')" aria-label="Зелёный">Зелёный</button>
+    <div class="controls">
+        <div id="colorButtons">
+            <button class="red" onclick="selectColor('red')">Красный</button>
+            <button class="black" onclick="selectColor('black')">Чёрный</button>
+            <button class="green" onclick="selectColor('green')">Зелёный</button>
+        </div>
+        <input type="number" id="betInput" placeholder="Введите ставку" min="1" />
+        <button id="spinBtn" onclick="spin()">Крутить!</button>
     </div>
-
-    <input type="number" id="betInput" placeholder="Введите ставку" min="1" />
-    <button id="spinBtn" onclick="spin()">Запустить рулетку</button>
 
     <div id="result"></div>
 
     <script>
         const strip = document.getElementById('strip');
-        const resultText = document.getElementById('result');
+        const balanceEl = document.getElementById('balance');
+        const resultEl = document.getElementById('result');
+        const buttons = document.querySelectorAll('#colorButtons button');
         const betInput = document.getElementById('betInput');
-        const colorButtons = document.querySelectorAll('#colorButtons button');
-        const balanceDisplay = document.getElementById('balance');
+        const spinBtn = document.getElementById('spinBtn');
 
-        let slots = [];
-        let selectedColor = null;
-        let userId = null;
-        let userBalance = 0;
+        let userId, userBalance = 0, selectedColor = null;
 
-        // Получаем userId из URL
-        function getUserIdFromUrl() {
-            const params = new URLSearchParams(window.location.search);
-            return params.get('userId');
+        const SLOT_COUNT = 60;
+        const FULL_ROTATIONS = 10;
+        const EXTRA_ROT = 2;    // ещё два «запасных» оборота
+        const SLOT_WIDTH = 95;   // 90px + 5px gap
+
+        function getUserId() {
+            return new URLSearchParams(window.location.search).get('userId');
         }
 
-        // Генерируем слотами: зеленый каждые 30, чередуем красный и черный
-        function generateSlots(count = 150) {
-            let alternate = true;
-            for (let i = 0; i < count; i++) {
-                const div = document.createElement('div');
-                let color = '';
-                if (i % 30 === 0) {
-                    color = 'green';
-                } else {
-                    color = alternate ? 'red' : 'black';
-                    alternate = !alternate;
-                }
-                div.className = 'slot ' + color;
-                strip.appendChild(div);
-                slots.push(color);
+        async function fetchBalance() {
+            try {
+                const res = await fetch(`/api/roulette/balance/${userId}`);
+                if (!res.ok) throw '';
+                const data = await res.json();
+                userBalance = data.balance ?? data.Balance ?? 0;
+                balanceEl.textContent = `Баланс: ${userBalance} 💰`;
+            } catch {
+                balanceEl.textContent = 'Баланс: недоступен';
             }
         }
 
         function selectColor(color) {
             selectedColor = color;
-            colorButtons.forEach(btn => btn.classList.remove('selected'));
-            document.querySelector(`#colorButtons button.${color}`).classList.add('selected');
-            resultText.textContent = '';
+            buttons.forEach(btn =>
+                btn.classList.toggle('selected', btn.classList.contains(color))
+            );
+            resultEl.textContent = '';
         }
 
-        async function fetchBalance() {
-            try {
-                const response = await fetch(`/api/roulette/balance/${userId}`);
-                if (!response.ok) throw new Error('Ошибка получения баланса');
-                const data = await response.json();
-                userBalance = data.Balance ?? data.balance ?? 0;
-                balanceDisplay.textContent = `Баланс: ${userBalance} 💰`;
-            } catch {
-                balanceDisplay.textContent = `Баланс: недоступен`;
+        function buildBaseSlots() {
+            const arr = [];
+            let flip = true;
+            for (let i = 0; i < SLOT_COUNT; i++) {
+                if (i % 30 === 0) arr.push('green');
+                else {
+                    arr.push(flip ? 'red' : 'black');
+                    flip = !flip;
+                }
             }
-        }
-
-        async function checkBalance(amount) {
-            await fetchBalance();
-            return userBalance >= amount;
+            return arr;
         }
 
         async function placeBet(color, amount) {
-            const response = await fetch('/api/roulette/placebet', {
+            const res = await fetch('/api/roulette/placebet', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ UserId: parseInt(userId), Color: color, Amount: amount }),
+                body: JSON.stringify({ UserId: +userId, Color: color, Amount: amount })
             });
-
-            if (!response.ok) throw new Error('Ошибка сервера');
-
-            const result = await response.json();
-            return result;
+            if (!res.ok) {
+                const err = await res.json().catch(() => ({ error: res.statusText }));
+                throw new Error(err.error || 'Ошибка при ставке');
+            }
+            return res.json();
         }
 
-        // Анимация рулетки
         async function spin() {
-            if (!selectedColor) {
-                alert('Выберите цвет для ставки!');
-                return;
-            }
+            if (!selectedColor) { alert('Выберите цвет!'); return; }
+            const bet = +betInput.value;
+            if (!(bet > 0)) { alert('Неверная ставка!'); return; }
+            await fetchBalance();
+            if (bet > userBalance) { alert('Недостаточно средств'); return; }
 
-            const bet = parseInt(betInput.value, 10);
-            if (isNaN(bet) || bet <= 0) {
-                alert('Введите корректную ставку!');
-                return;
-            }
+            spinBtn.disabled = true;
+            spinBtn.textContent = 'Крутим...';
+            resultEl.textContent = '';
 
-            if (!(await checkBalance(bet))) {
-                alert('Недостаточно средств на балансе!');
-                return;
-            }
+            const base = buildBaseSlots();
+            const offset = Math.floor(Math.random() * base.length);
+            const rotated = base.slice(offset).concat(base.slice(0, offset));
 
-            // Делаем ставку
+            let result;
             try {
-                spinBtn.disabled = true;
-                spinBtn.textContent = 'Крутим...';
-                resultText.textContent = '';
-
-                const spinDuration = 8000; // 8 сек анимация
-
-                // Генерация случайного цвета, имитация с сервера
-                const result = await placeBet(selectedColor, bet);
-
-                // Найдем индекс, куда поставить колесо так, чтобы выбранный цвет совпал с индикатором
-                // Индикатор на середине видимой области
-                const visibleSlots = Math.floor(strip.parentElement.offsetWidth / 80);
-                // Мы хотим, чтобы цвет совпал с color, сдвинем на нужный индекс
-                // Найдем индекс результата (actualColor) в slots
-                const targetColor = result.ActualColor?.toLowerCase() || 'red';
-                let targetIndex = slots.findIndex(c => c === targetColor);
-                if (targetIndex === -1) targetIndex = 0;
-
-                // Добавим полный оборот + позиционирование на targetIndex так, чтобы цвет оказался под индикатором
-                // Центр полосы - позиция индикатора
-                const fullRotations = 10;
-                const offset = (targetIndex * 80) + (40); // половина ширины слота
-                const totalDistance = fullRotations * slots.length * 80 + offset - (strip.parentElement.offsetWidth / 2);
-
-                // Запускаем анимацию
-                strip.style.transition = `transform ${spinDuration}ms cubic-bezier(0.25, 1, 0.5, 1)`;
-                strip.style.transform = `translateX(${-totalDistance}px)`;
-
-                await new Promise(resolve => setTimeout(resolve, spinDuration));
-
-                // Обновляем баланс и результат
-                userBalance = result.NewBalance ?? userBalance;
-                balanceDisplay.textContent = `Баланс: ${userBalance} 💰`;
-
-                if (result.Win) {
-                    resultText.style.color = '#2ecc71';
-                    resultText.textContent = `Вы выиграли ${result.Prize}! Цвет: ${result.ActualColor}`;
-                } else {
-                    resultText.style.color = '#e74c3c';
-                    resultText.textContent = `Вы проиграли ставку ${bet}. Цвет: ${result.ActualColor}`;
-                }
+                result = await placeBet(selectedColor, bet);
             } catch (e) {
-                alert('Ошибка: ' + e.message);
-            } finally {
-                spinBtn.disabled = false;
-                spinBtn.textContent = 'Запустить рулетку';
-                strip.style.transition = 'none';
-                strip.style.transform = 'translateX(0)';
+                alert(e.message);
+                resetSpin();
+                return;
             }
+
+            // читаем ответ (camel или PascalCase)
+            const actual = (result.actualColor ?? result.ActualColor ?? 'red').toLowerCase();
+            const win = (result.win ?? result.Win ?? false);
+            const prize = (result.prize ?? result.Prize ?? 0);
+            const newBalance = (result.newBalance ?? result.NewBalance ?? userBalance);
+
+            // индекс победного цвета в одном обороте
+            const idx = rotated.indexOf(actual);
+            const target = FULL_ROTATIONS * base.length + (idx >= 0 ? idx : 0);
+
+            // рендерим полосу: (FULL_ROTATIONS + EXTRA_ROT) оборотов
+            strip.innerHTML = '';
+            const frag = document.createDocumentFragment();
+            for (let r = 0; r < FULL_ROTATIONS + EXTRA_ROT; r++) {
+                for (const color of rotated) {
+                    const d = document.createElement('div');
+                    d.className = 'slot ' + color;
+                    frag.appendChild(d);
+                }
+            }
+            strip.appendChild(frag);
+
+            // стартуем с 0
+            strip.style.transition = 'none';
+            strip.style.transform = 'translateX(0)';
+            strip.getBoundingClientRect(); // ребилд
+
+            // считаем сдвиг до target
+            const containerW = strip.parentElement.offsetWidth;
+            const shift = target * SLOT_WIDTH + SLOT_WIDTH / 2 - containerW / 2;
+
+            strip.style.transition = `transform 8s cubic-bezier(0.25,1,0.5,1)`;
+            strip.style.transform = `translateX(${-shift}px)`;
+
+            await new Promise(r => setTimeout(r, 8000));
+
+            // показываем результат
+            userBalance = newBalance;
+            balanceEl.textContent = `Баланс: ${userBalance} 💰`;
+            resultEl.style.color = win
+                ? getComputedStyle(document.documentElement).getPropertyValue('--green')
+                : getComputedStyle(document.documentElement).getPropertyValue('--red');
+            resultEl.textContent = win
+                ? `Вы выиграли ${prize}! (${actual})`
+                : `Вы проиграли ${bet}. (${actual})`;
+
+            resetSpin();
         }
 
-        // Инициализация
-        const spinBtn = document.getElementById('spinBtn');
-        userId = getUserIdFromUrl();
+        function resetSpin() {
+            spinBtn.disabled = false;
+            spinBtn.textContent = 'Крутить!';
+            // не возвращаем полоску назад — оставляем финальный вид
+        }
 
-        if (!userId) {
-            alert('Ошибка: не указан userId в URL. Добавьте ?userId=число');
-        } else {
-            generateSlots();
+        document.addEventListener('DOMContentLoaded', () => {
+            userId = getUserId();
+            if (!userId) {
+                alert('Добавьте в URL ?userId=ID');
+                return;
+            }
             fetchBalance();
-        }
+        });
     </script>
 
 </body>

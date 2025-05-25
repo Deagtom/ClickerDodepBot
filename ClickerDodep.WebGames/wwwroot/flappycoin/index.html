@@ -1,0 +1,228 @@
+﻿<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Flappy Coin</title>
+    <style>
+        /* Центровка и сброс скруглений */
+        body, html {
+            margin: 0;
+            padding: 0;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            background: #000; /* на случай, если canvas не покрывает полностью */
+            font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        canvas {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="game"></canvas>
+    <script>
+        (() => {
+            const canvas = document.getElementById('game');
+            const ctx = canvas.getContext('2d');
+            const dpr = window.devicePixelRatio || 1;
+
+            // Настройки
+            const baseGravity = 800;
+            const baseJumpVelocity = -300;
+            const basePipeSpeed = 185;
+            const pipeGap = 180;
+            const pipeWidth = 60;
+            const basePipeInterval = 2000;
+            const maxPipeSpeed = 450;
+            const maxGravity = 1400;
+            const difficultyThreshold = 100;
+            const baseSpawnDistance = basePipeSpeed * (basePipeInterval / 1000);
+            const coinRadius = 20;
+            const coinX = 100;
+            const cloudSpeedFactor = 0.2;
+
+            let coinY, coinVelocity;
+            let pipes, lastPipeTime, lastFrameTime;
+            let gameOver, score;
+            let pipeSpeed, gravity, jumpVelocity;
+            let clouds, animationId;
+
+            function resize() {
+                canvas.width = window.innerWidth * dpr;
+                canvas.height = window.innerHeight * dpr;
+                canvas.style.width = window.innerWidth + 'px';
+                canvas.style.height = window.innerHeight + 'px';
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                initClouds();
+            }
+            window.addEventListener('resize', resize);
+            resize();
+
+            function initClouds() {
+                const cw = canvas.width / dpr;
+                const ch = canvas.height / dpr;
+                clouds = [];
+                for (let i = 0; i < 20; i++) {
+                    clouds.push({ x: Math.random() * cw, y: Math.random() * ch * 0.5, r: 15 + Math.random() * 35 });
+                }
+            }
+
+            function resetGame() {
+                const ch = canvas.height / dpr;
+                coinY = ch / 2;
+                coinVelocity = 0;
+                pipes = [];
+                lastPipeTime = 0;
+                lastFrameTime = 0;
+                gameOver = false;
+                score = 0;
+                pipeSpeed = basePipeSpeed;
+                gravity = baseGravity;
+                jumpVelocity = baseJumpVelocity;
+                if (!animationId) animationId = requestAnimationFrame(gameLoop);
+            }
+
+            function createPipe() {
+                const ch = canvas.height / dpr;
+                const minTop = 40;
+                const maxTop = ch - pipeGap - 40;
+                let topH;
+                if (pipes.length) {
+                    const last = pipes[pipes.length - 1].topH;
+                    const delta = (0.2 + Math.random() * 0.4) * ch;
+                    topH = last + (Math.random() * 2 - 1) * delta;
+                    topH = Math.max(minTop, Math.min(maxTop, topH));
+                } else {
+                    topH = minTop + Math.random() * (maxTop - minTop);
+                }
+                pipes.push({ x: canvas.width / dpr, topH });
+            }
+
+            function circleRectCollision(cx, cy, r, rx, ry, rw, rh) {
+                const nx = Math.max(rx, Math.min(cx, rx + rw));
+                const ny = Math.max(ry, Math.min(cy, ry + rh));
+                const dx = cx - nx, dy = cy - ny;
+                return dx * dx + dy * dy < r * r;
+            }
+
+            function updateAndDrawClouds(dt) {
+                const cw = canvas.width / dpr;
+                ctx.fillStyle = 'rgba(255,255,255,0.6)';
+                for (let c of clouds) {
+                    c.x -= pipeSpeed * cloudSpeedFactor * dt;
+                    if (c.x + c.r * 1.5 < 0) c.x = cw + c.r * 1.5;
+                    ctx.beginPath();
+                    ctx.arc(c.x - c.r * 0.5, c.y, c.r * 0.6, 0, Math.PI * 2);
+                    ctx.arc(c.x, c.y - c.r * 0.2, c.r, 0, Math.PI * 2);
+                    ctx.arc(c.x + c.r * 0.5, c.y, c.r * 0.7, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            function drawPipe(x, topH, ch) {
+                ctx.save();
+                ctx.shadowColor = 'rgba(0,0,0,0.3)'; ctx.shadowBlur = 8; ctx.shadowOffsetX = 3; ctx.shadowOffsetY = 3;
+                const pipeGrad = ctx.createLinearGradient(x, 0, x + pipeWidth, topH);
+                pipeGrad.addColorStop(0, '#7cb342'); pipeGrad.addColorStop(1, '#558b2f');
+                ctx.fillStyle = pipeGrad;
+                ctx.fillRect(x, 0, pipeWidth, topH);
+                ctx.fillRect(x, topH + pipeGap, pipeWidth, ch - (topH + pipeGap));
+                ctx.restore();
+            }
+
+            function drawCoin(x, y) {
+                // оригинальный стиль монеты
+                const grad = ctx.createRadialGradient(x, y, coinRadius * 0.3, x, y, coinRadius);
+                grad.addColorStop(0, '#fff46e'); grad.addColorStop(1, '#f7d84b');
+                ctx.save();
+                ctx.fillStyle = grad;
+                ctx.shadowColor = 'rgba(255,255,100,0.8)'; ctx.shadowBlur = 15;
+                ctx.beginPath(); ctx.arc(x, y, coinRadius, 0, Math.PI * 2); ctx.fill();
+                ctx.restore();
+                ctx.fillStyle = '#b38600'; ctx.font = '28px Arial'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                ctx.fillText('$', x, y + 1);
+            }
+
+            function drawScore() {
+                const cw = canvas.width / dpr;
+                ctx.fillStyle = '#000'; ctx.font = 'bold 36px Segoe UI'; ctx.textAlign = 'center';
+                ctx.shadowColor = 'rgba(255,255,255,0.7)'; ctx.shadowBlur = 6;
+                ctx.fillText(`Score: ${score}`, cw / 2, 50);
+                ctx.shadowBlur = 0;
+            }
+
+            function updateDifficulty() {
+                const t = Math.min(score / difficultyThreshold, 1);
+                pipeSpeed = basePipeSpeed + (maxPipeSpeed - basePipeSpeed) * t;
+                gravity = baseGravity + (maxGravity - baseGravity) * t;
+            }
+
+            function drawBackground(ts) {
+                const cw = canvas.width / dpr, ch = canvas.height / dpr;
+                const hue = (ts / 100) % 360;
+                const grad = ctx.createLinearGradient(0, 0, 0, ch);
+                grad.addColorStop(0, `hsl(${hue},60%,85%)`);
+                grad.addColorStop(1, `hsl(${(hue + 30) % 360},60%,75%)`);
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, cw, ch);
+            }
+
+            function gameLoop(ts = 0) {
+                if (!lastFrameTime) lastFrameTime = ts;
+                const dt = (ts - lastFrameTime) / 1000;
+                lastFrameTime = ts;
+                updateDifficulty();
+
+                drawBackground(ts);
+                updateAndDrawClouds(dt);
+
+                coinVelocity += gravity * dt; coinY += coinVelocity * dt;
+                const ch = canvas.height / dpr;
+
+                const interval = (baseSpawnDistance / pipeSpeed) * 1000;
+                if (ts - lastPipeTime > interval) { createPipe(); lastPipeTime = ts; }
+                pipes.forEach(p => p.x -= pipeSpeed * dt);
+
+                if (pipes.length && pipes[0].x + pipeWidth < 0) { pipes.shift(); score++; }
+
+                for (let p of pipes) {
+                    if (circleRectCollision(coinX, coinY, coinRadius, p.x, 0, pipeWidth, p.topH) ||
+                        circleRectCollision(coinX, coinY, coinRadius, p.x, p.topH + pipeGap, pipeWidth, ch - (p.topH + pipeGap))) gameOver = true;
+                }
+                if (coinY + coinRadius > ch || coinY - coinRadius < 0) gameOver = true;
+
+                pipes.forEach(p => drawPipe(p.x, p.topH, ch));
+                drawCoin(coinX, coinY);
+                drawScore();
+
+                if (gameOver) {
+                    const cw = canvas.width / dpr;
+                    ctx.fillStyle = 'rgba(0,0,0,0.7)'; ctx.font = 'bold 72px Segoe UI'; ctx.textAlign = 'center';
+                    ctx.fillText('Game Over', cw / 2, ch / 2);
+                    ctx.font = '24px Segoe UI'; ctx.fillText('Click or press Space to restart', cw / 2, ch / 2 + 50);
+                    animationId = null; return;
+                }
+
+                animationId = requestAnimationFrame(gameLoop);
+            }
+
+            function jump() {
+                if (gameOver) resetGame(); coinVelocity = jumpVelocity;
+            }
+
+            window.addEventListener('keydown', e => { if (e.code === 'Space') jump(); });
+            window.addEventListener('mousedown', jump);
+            window.addEventListener('touchstart', e => { e.preventDefault(); jump(); }, { passive: false });
+
+            resetGame();
+        })();
+    </script>
+</body>
+</html>

@@ -4,6 +4,7 @@ using Telegram.Bot.Types;
 using Telegram.Bot.Types.Enums;
 using Telegram.Bot.Types.ReplyMarkups;
 using Serilog;
+using ClickerDodep.Data;
 
 
 Log.Logger = new LoggerConfiguration()
@@ -80,7 +81,8 @@ async Task OnMessage(Message msg, UpdateType type)
                 replyMarkup: new KeyboardButton[]
                 {
                 "/clicker",
-                "/roulette"
+                "/roulette",
+                "/flappycoin"
                 }
             );
             break;
@@ -103,12 +105,25 @@ async Task OnMessage(Message msg, UpdateType type)
         case "/roulette":
             Log.Information("Пользователь {UserId} выбрал рулетку", msg.From.Id);
 
-            string webAppUrl = $"https://deagtom.github.io/roulette-html?userId={msg.From!.Id}";
+            string rouletteUrl = $"https://deagtom.github.io/roulette-html?userId={msg.From!.Id}";
             await bot.SendMessage(
                 msg.Chat,
                 "🎰 Нажмите кнопку ниже, чтобы сыграть в рулетку:",
                 replyMarkup: new InlineKeyboardMarkup(
-                    InlineKeyboardButton.WithWebApp("🎮 Играть в рулетку", new WebAppInfo(webAppUrl))
+                    InlineKeyboardButton.WithWebApp("🎮 Играть в рулетку", new WebAppInfo(rouletteUrl))
+                )
+            );
+            break;
+
+        case "/flappycoin":
+            Log.Information("Пользователь {UserId} выбрал прыгающую монетку", msg.From.Id);
+
+            string FlappyCoinUrl = $"https://deagtom.github.io/flappy-html?userId={msg.From!.Id}";
+            await bot.SendMessage(
+                msg.Chat,
+                "💸 Нажмите кнопку ниже, чтобы сыграть в прыгающую монетку:",
+                replyMarkup: new InlineKeyboardMarkup(
+                    InlineKeyboardButton.WithWebApp("🎮 Играть в монетку", new WebAppInfo(FlappyCoinUrl))
                 )
             );
             break;
